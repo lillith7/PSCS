@@ -48,20 +48,11 @@ void set_switch_task(uint8_t should) {
 uint8_t tmpa = 0;
 static void pit_timer_callback(registers_t *regs) {
     milliseconds++;
-    
+
     if (milliseconds % 2) {
         should_switch_task = 1;
     }
 
-    if(get_switch_task() == 1) {
-        set_switch_task(0);
-        tmpa = !tmpa;
-        if(tmpa) {
-            switchtsk(get_context(5).esp, get_context(6).esp);
-        } else {
-            switchtsk(get_context(6).esp, get_context(5).esp);
-        }
-    }
     if (milliseconds == 1000) {
         milliseconds = 0;
         seconds++;
@@ -74,6 +65,19 @@ static void pit_timer_callback(registers_t *regs) {
             }
         }
     }
+
+    if(should_switch_task == 1) {
+        should_switch_task = 0;
+        // asm("cli");
+        tmpa = !tmpa;
+        if(tmpa) {
+            switch_to_task(get_task(3), get_task(1));
+        } else {
+            switch_to_task(get_task(3), get_task(0));
+        }
+        // asm("sti");
+    }
+    
     if (sleeping == 1) {
         sleep_ms++;
         if (sleep_ms == sleep_ms_goal) {
@@ -106,8 +110,11 @@ void init_pit() {
     port_byte_out(0x40, divisor & 0xFF);   /* Set low byte of divisor */
     port_byte_out(0x40, divisor >> 8);     /* Set high byte of divisor */
     register_interrupt_handler(IRQ0, pit_timer_callback);
+    
     asm volatile("sti");
     PIT_ENABLED = 1;
+    create_task(get_tcb(3), pit_timer_callback, 0, 0);
+    
 }
 
 void time_sleep(uint32_t time_ms) {

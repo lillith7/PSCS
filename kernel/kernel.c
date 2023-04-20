@@ -98,7 +98,7 @@ void start_kernel() {
 #endif
 
 #ifdef TIMER_ENABLED
-    init_timer();
+    // init_timer();
     print_string("PIT TIMER ENABLED ON IRQ 0\n");
 #endif
 
@@ -111,7 +111,13 @@ void start_kernel() {
     rtc_install();
     set_idt_gate(0x40, test_int);
     // asm volatile("int $0x40");
-    create_context(0, kernel_sleep);
+    // create_context(0, kernel_sleep);
     context_switch_test(2);
+
+    #ifdef TIMER_ENABLED
+    init_timer();
+    // print_string("PIT TIMER ENABLED ON IRQ 0\n");
+#endif
+
     // kernel_sleep();
 }
